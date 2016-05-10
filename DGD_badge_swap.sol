@@ -25,7 +25,7 @@ function safeToSubtract(uint256 a,uint256 b)returns(bool );
 contract swap{
     address public beneficiary;
     Badge public badgeObj;
-    uint public price_token;
+    uint public badge_price;
     uint256 public WEI_PER_FINNEY = 1000000000000000;
     uint public expiryDate;
     
@@ -33,24 +33,39 @@ contract swap{
     function swap(address sendEtherTo, address adddressOfBadge, uint badgePriceInFinney_1000FinneyIs_1Ether, uint durationInDays){
         beneficiary = sendEtherTo;
         badgeObj = Badge(adddressOfBadge);
-        price_token = badgePriceInFinney_1000FinneyIs_1Ether * WEI_PER_FINNEY;
+        badge_price = badgePriceInFinney_1000FinneyIs_1Ether * WEI_PER_FINNEY;
         expiryDate = now + durationInDays * 1 days;
     }
     
     // This function is called every time some one sends ether to this contract
     function(){
         if (now >= expiryDate) throw;
-        var badges_to_send = msg.value / price_token;
+        uint amountUsed;
+        uint extraAmount;
+        var badges_to_send = msg.value / badge_price;
         uint balance = badgeObj.balanceOf(this);
         address payee = msg.sender;
-        if (balance >= badges_to_send){
-            badgeObj.transfer(msg.sender, badges_to_send);
-            beneficiary.send(msg.value);    
+        if (badges_to_send == 0){
+            payee.send(msg.value);
         } else {
-            badgeObj.transfer(msg.sender, balance);
-            uint amountReturned = (badges_to_send - balance) * price_token;
-            payee.send(amountReturned);
-            beneficiary.send(msg.value - amountReturned);
+            if (balance >= badges_to_send){
+                badgeObj.transfer(msg.sender, badges_to_send);
+                amountUsed = badges_to_send * badge_price;
+                extraAmount = msg.value - amountUsed;
+                beneficiary.send(amountUsed);    
+                if (extraAmount > 0){
+                    payee.send(extraAmount);
+                }
+            } else {
+                badgeObj.transfer(msg.sender, balance);
+                uint amountReturned = (badges_to_send - balance) * badge_price;
+                amountUsed = balance * badge_price;
+                extraAmount = msg.value - amountUsed;
+                beneficiary.send(amountUsed);    
+                if (extraAmount > 0){
+                    payee.send(extraAmount);
+                }
+            }    
         }
     }
     
