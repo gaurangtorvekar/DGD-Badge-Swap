@@ -27,7 +27,6 @@ contract swap{
     Badge public badgeObj;
     uint public price_token;
     uint256 public WEI_PER_FINNEY = 1000000000000000;
-    uint public BILLION = 1000000000;
     uint public expiryDate;
     
     // Constructor function for this contract. Called during contract creation
